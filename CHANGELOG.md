@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 ### Fixed
-
+Bug fixes related to first release.
 
 ## [v1.14]
 

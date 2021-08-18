@@ -1,3 +1,9 @@
+/* About: Column_CustomTransformation
+
+Transforms columns using functions not already available in the New Formula Column menu.
+
+Section: Globals
+*/
 Names default to here( 1 );
 
 thisAddIn = "com.github.himanga.JMPScriptingTools";

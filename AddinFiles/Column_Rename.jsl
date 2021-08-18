@@ -44,25 +44,45 @@ updatecols = function({},
 );
 
 exQueries = [
+	" Prepend" =>
+	(
+		tebPattern << Set Text( "(.*)" );
+		tebReplacement << Set Text( "Prepended \1" )
+	),
+	" Append" =>
+	(
+		tebPattern << Set Text( "(.*)" );
+		tebReplacement << Set Text( "\1 Appended" )
+	),
+	" Strip Trailing Number" =>
+	(
+		tebPattern << Set Text( "(.*) (\d)+" );
+		tebReplacement << Set Text( "\1" )
+	),
+	" Replace Word" =>
+	(
+		tebPattern << Set Text( "(.*)removethis(.*)" );
+		tebReplacement << Set Text( "\1replace\2" )
+	),
 	"PLS" =>
 	(
 		tebPattern << Set Text( "^(?:(X|Y)( Score .+) Formula)|(?:(Pred )Formula (.+))|(?:(Pred)icted( .+))|(?:(Res)iduals( .+))|(T²)|(DMod(.))|((?:Lower|Upper) 95% (?:Mean|Indiv) .+)|(Validation)|(?:(X|Y)( Score)s( \d+))|(PredSE .*)$" );
 		tebReplacement << Set Text( "PLS \1\2\3\4\5\6\7\8\9\10\11\12\13\14\15\16\17" )
 	),
+	"PCA Score" =>
+	(
+		tebPattern << Set Text( "^Prin(\d+)$" );
+		tebReplacement << Set Text( "PCA Score \1" )
+	),
 	"PCA Pred, DModX, T², and Factor" =>
 	(
 		tebPattern << Set Text( "^(?:(Pred)icted( .+))|(?:(?:(Norm)alized )?(DMod(?:.)))|(?:(T² Cont)ribution)|(?:(T²))|(?:(Factor)(\d+))$" );
-		tebReplacement << Set Text( "PLS \1\2\3\4\5\6\7" )
+		tebReplacement << Set Text( "PCA \1\2\3\4\5\6\7" )
 	),
 	"PCA SqCos and Contributions" =>
 	(
 		tebPattern << Set Text( "^(?:(Part)ial (Cont)ribution Prin(\d+))|(?:(Sq)uared (Cos)ines Prin(\d+))$" );
-		tebReplacement << Set Text( "PLS \1\2\4\5 Score \3\6" )
-	),
-	"Strip Trailing Number" =>
-	(
-		tebPattern << Set Text( "(.*) (\d)+" );
-		tebReplacement << Set Text( "\1" )
+		tebReplacement << Set Text( "PCA \1\2\4\5 Score \3\6" )
 	),
 	"JMP PI Data Columns" =>
 	(
