@@ -11,6 +11,15 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 Bug fixes related to first release.
 
+## [v1.15]
+
+### Added
+
+### Changed
+
+### Fixed
+Bug fixes related to first release.
+
 ## [v1.14]
 
 ### Added

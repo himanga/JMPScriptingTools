@@ -1,7 +1,7 @@
 Associative Array(
 	List(
 		List( "abouttext", "Tools to make it easier to use JMP. See the documentation (below) for more information." ),
-		List( "addinVersion", 1.14a ),
+		List( "addinVersion", 1.15 ),
 		List( "author", "Isaac Himanga" ),
 		List( "buildDate", 3712136081 ),
 		List( "developer", "Isaac Himanga" ),
