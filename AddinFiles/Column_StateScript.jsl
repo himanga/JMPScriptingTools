@@ -1,0 +1,75 @@
+//save script to clipboard that restores the current column states
+
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Column State Script" );
+
+dt = current data table();
+i = 0;
+hdn = {};
+exc = {};
+sel = {};
+
+hdn =  dt << Get Hidden Columns();
+exc = dt << Get Excluded Columns();
+sel = dt << Get Selected Columns();
+
+script = "Names default to here( 1 );
+
+removenames = function( {listin},
+	listout = {};
+	for( i=1, i <= N items( listin ), i++,
+		cn = char( listin[i] );
+		if( left( cn, 5) || right( cn, 1) == \!"Name()\!", cn = substr( cn, 6, length( cn ) - 1 ) );
+		listout[i] = cn;
+	);
+	Return(listout);
+);
+
+dt = current data table();
+
+hdninput = " || if( N items( hdn ) == 0, "{}", char( eval expr( hdn ) ) )
+|| ";
+excinput = " || if( N items( exc ) == 0, "{}", char( eval expr( exc ) ) )
+|| ";
+selinput = " || if( N items( sel ) == 0, "{}", char( eval expr( sel ) ) )
+|| ";
+
+hdn = removenames( hdninput );
+exc = removenames( excinput );
+sel = removenames( selinput );
+
+colnames = dt << get column names();
+
+for( i=1, i <= N Items( colnames ), i++,
+	
+	
+	if( contains( hdn, char( colnames[i] ) ),
+		 Column( dt, colnames[i] ) << Hide( 1 );,
+		 Column( dt, colnames[i] ) << Hide( 0 );
+	);
+	if( contains( exc, char( colnames[i] ) ),
+		 Column( dt, colnames[i] ) << Exclude( 1 );,
+		 Column( dt, colnames[i] ) << Exclude( 0 );
+	);
+	if( contains( sel, char( colnames[i] ) ),
+		 Column( dt, colnames[i] ) << Set Selected( 1 );,
+		 Column( dt, colnames[i] ) << Set Selected( 0 );
+	);
+);";
+
+Set clipboard(script);
+
+show("Set clipboard.")

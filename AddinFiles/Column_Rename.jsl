@@ -1,0 +1,163 @@
+﻿
+dt = current data table();
+
+if( is empty( dt ), throw("Open a data table and select columns to transform first."));
+
+cn = list();
+cnoriginal = list();
+cnnew = list();
+cnresult = list();
+
+previewcols = function({},
+	cn = dt << Get Selected Columns();
+	if( n items( cn ) < 1, throw( "Select some columns to rename first" ) );
+	cnoriginal = transform each({col,c}, cn, char(cn[c]));
+	scboriginal << Set Values( cnoriginal );
+	
+	cnnew = transform each({col,c}, cnoriginal, try(
+		match = regex(col, tebPattern << Get Text, tebReplacement << Get Text);
+		if( is missing(match),
+			"-- No match, Skip --",
+			char(match)
+		)
+	,
+		char(exception_msg)
+	));
+	scbnew << Set Values( cnnew );
+	
+	sbresult << Set Values( transform each({col,c}, cn, ""));
+);
+
+updatecols = function({},
+	previewcols();
+	cnresult = transform each({col,c}, cnoriginal, try(
+		if(cnnew[c] != "-- No match, Skip --",
+			cn[c] << Set Name(cnnew[c]);
+			"Success",
+			"Skipped"
+		)
+	,
+		char(exception_msg)
+	) );
+	show(cnresult);
+	sbresult << Set Values( cnresult );
+);
+
+exQueries = [
+	"PLS" =>
+	(
+		tebPattern << Set Text( "^(?:(X|Y)( Score .+) Formula)|(?:(Pred )Formula (.+))|(?:(Pred)icted( .+))|(?:(Res)iduals( .+))|(T²)|(DMod(.))|((?:Lower|Upper) 95% (?:Mean|Indiv) .+)|(Validation)|(?:(X|Y)( Score)s( \d+))|(PredSE .*)$" );
+		tebReplacement << Set Text( "PLS \1\2\3\4\5\6\7\8\9\10\11\12\13\14\15\16\17" )
+	),
+	"PCA Pred, DModX, T², and Factor" =>
+	(
+		tebPattern << Set Text( "^(?:(Pred)icted( .+))|(?:(?:(Norm)alized )?(DMod(?:.)))|(?:(T² Cont)ribution)|(?:(T²))|(?:(Factor)(\d+))$" );
+		tebReplacement << Set Text( "PLS \1\2\3\4\5\6\7" )
+	),
+	"PCA SqCos and Contributions" =>
+	(
+		tebPattern << Set Text( "^(?:(Part)ial (Cont)ribution Prin(\d+))|(?:(Sq)uared (Cos)ines Prin(\d+))$" );
+		tebReplacement << Set Text( "PLS \1\2\4\5 Score \3\6" )
+	),
+	"Strip Trailing Number" =>
+	(
+		tebPattern << Set Text( "(.*) (\d)+" );
+		tebReplacement << Set Text( "\1" )
+	),
+	"JMP PI Data Columns" =>
+	(
+		tebPattern << Set Text( "(.*) (value|svalue|status|vstatus)" );
+		tebReplacement << Set Text( "My Column \1" )
+	)
+];
+
+win = New Window("rename columns", show menu(0), show toolbars(0),
+	text box("Rename Columns", << Set Font Size(20)),
+	
+	h list box(
+		v list box(
+			spacer box(size(20,20)),
+			text box(
+				"Select columns in the data table, write a regular expression that captures parts of the " ||
+				"existing column name you want to keep in parentheses (back references), then write a " ||
+				"replacement expression referencing those back references, using \1 to reference the first " ||
+				"set of parentheses, \2 for the 2nd, and so on.",
+				<<Set Wrap(425)
+			),
+			
+			spacer box(size(20,20)),
+			text box("See these links for info about regular expressions:"),
+			button box("Introduction on medium.com/factory mind",
+				Web("https://medium.com/factory-mind/regex-tutorial-a-simple-cheatsheet-by-examples-649dc1c3f285"),
+				<< Underline style(1)
+			),
+			button box("Test regex expressions on regexr.com",
+				Web("https://regexr.com"),
+				<< Underline style(1)
+			),
+			
+			spacer box(size(20,20)),
+			h list box(
+				text box("Regex pattern:", << set width(125)), 
+				tebPattern = text edit box("X Score (.+) Formula", << set width(300))
+			),
+			h list box(
+				text box("Regex replacement:", << set width(125) ), 
+				tebReplacement = text edit box("PLS \1 Score", << set width(300))
+			)
+		)
+	,
+		v list box(
+			V List box(
+				Text Box( "Example Queries", <<Set Font Style("bold" )),
+				
+				lb_ExQuery = List Box( exQueries << get keys, 
+					( Eval( exQueries[ ( lb_ExQuery << Get Selected )[1] ] ) );
+						previewcols()
+				),
+				<< Padding( Top(20), Left(20), right(20), bottom(20) ),
+				spacer box(size(20,20)),
+				H List Box(
+					button box("Preview",
+						<< Set Script(
+							previewcols()
+						)
+					),
+					spacer box(size(20,20)),
+					button box("Change Names",
+						<< Set Script(
+							updatecols()
+						)
+					)
+				),
+				spacer box(size(20,20)),
+				H List Box(
+					button box("Show table",
+						<< Set Script(
+							dt << bring window to front();
+						)
+					),
+					spacer box(size(20,20)),
+					button box("Close/Cancel",
+						<< Set Script(
+							win << close window();
+						)
+					)
+				)
+			)
+		)
+	),
+	spacer box(size(20,20)),
+	H List Box(
+		table box(
+			scboriginal = stringcolbox( "Original", "" ),
+			scbnew = stringcolbox( "New", "" ),
+			sbresult = stringcolbox( "Result", "" )
+		)
+	),
+	<< Padding( Left( 10 ), Top( 10 ), Right( 10 ), Bottom( 10 ) );
+);
+
+lb_ExQuery << Set Selected(1);
+
+previewcols();

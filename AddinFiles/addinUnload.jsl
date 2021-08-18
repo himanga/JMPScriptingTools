@@ -1,0 +1,23 @@
+/*
+About: Default AddIn Unload Script
+
+Log add-in usage whenver the add-in is unloaded, including
+when JMP exists.  Upload logs to a shared location
+
+Section: Globals
+*/
+
+Names default to here( 1 );
+
+// About: Customize this file
+// Set this to the add-in ID
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+// About: get or make namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Unload" );

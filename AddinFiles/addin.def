@@ -1,0 +1,5 @@
+id=com.github.himanga.JMPScriptingTools
+name=Scripting Tools
+supportJmpSE=0
+addinVersion=1.14
+minJmpVersion=13

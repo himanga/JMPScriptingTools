@@ -1,0 +1,125 @@
+<!-- JMP Add-In Builder created --><jm:menu_and_toolbar_customizations xmlns:jm="http://www.jmp.com/ns/menu" version="3">
+  <jm:insert_in_main_menu>
+    <jm:insert_in_menu>
+      <jm:name>Cols</jm:name>
+      <jm:insert_after>
+        <jm:name></jm:name>
+        <jm:separator />
+        <jm:command>
+          <jm:name>RENAME COLUMNS</jm:name>
+          <jm:caption>Rename Columns</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Column_Rename.jsl</jm:action>
+          <jm:tip>Rename columns by matching a regular expression</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>COPY COLUMN SCRIPT</jm:name>
+          <jm:caption>Copy Column Script</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Column_GetScript.jsl</jm:action>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>CUSTOM TRANSFORMATION</jm:name>
+          <jm:caption>Custom Transformation</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Column_CustomTransformation.jsl</jm:action>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>COPY COLUMN STATES SCRIPT</jm:name>
+          <jm:caption>Copy Column States Script</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Column_StateScript.jsl</jm:action>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>SELECT COLUMNS IN CLIPBOARD</jm:name>
+          <jm:caption>Select Columns in Clipboard</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Column_SelectColumnsInClipboard.jsl</jm:action>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>COPY SELECTED COLUMNS TO CLIPBOARD AS LIST</jm:name>
+          <jm:caption>Copy Selected Columns to Clipboard as List</jm:caption>
+          <jm:action type="text">Set clipboard( Current data table() &lt;&lt; Get Selected Columns );</jm:action>
+          <jm:tip>Save the selected column names to the clipboard as a list similar to { :Column 1, :Column 2 }</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>COPY SELECTED COLUMNS NAMES TO CLIPBOARD AS ONE-PER-LINE</jm:name>
+          <jm:caption>Copy Selected Columns Names to Clipboard as One-Per-Line</jm:caption>
+          <jm:action type="text">Names default to here( 1 );
+nms = ( Current data table() &lt;&lt; Get Selected Columns );
+If(n Items(nms) &gt; 0,
+	r = "";
+	For( i=1, i&lt;=N Items( nms), i++,
+		r = r || If( i &gt; 1, "\!N", "") || char( nms[i] &lt;&lt; Get Name )
+	);
+	Set clipboard( r ),
+	Set clipboard("")
+);</jm:action>
+          <jm:tip>Save the selected column names to the clipboard as a list similar to:\!NColumn 1\!NColumn 2</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+      </jm:insert_after>
+    </jm:insert_in_menu>
+    <jm:insert_in_menu>
+      <jm:name>Rows</jm:name>
+      <jm:insert_after>
+        <jm:name></jm:name>
+        <jm:separator />
+        <jm:command>
+          <jm:name>COPY ROW STATE SCRIPT</jm:name>
+          <jm:caption>Copy row state script</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Row_StateScript.jsl</jm:action>
+          <jm:tip>Saves a script to recreate the current all current row states to the clipboard.</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+        <jm:command>
+          <jm:name>COPY ROW STATE SCRIPT - LIMITED</jm:name>
+          <jm:caption>Copy row state script - limited</jm:caption>
+          <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\Row_StateScriptLimited.jsl</jm:action>
+          <jm:tip>Saves a script to recreate the current selected, hidden, and excluded state to the clipboard.</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+      </jm:insert_after>
+    </jm:insert_in_menu>
+    <jm:insert_in_menu>
+      <jm:name>Add-Ins</jm:name>
+      <jm:insert_after>
+        <jm:name></jm:name>
+        <jm:menu>
+          <jm:name>SCRIPTING TOOLS</jm:name>
+          <jm:caption>Scripting Tools</jm:caption>
+          <jm:command>
+            <jm:name>GET WINDOW SCRIPTABLE OBJECT</jm:name>
+            <jm:caption>Get Window Scriptable Object</jm:caption>
+            <jm:action type="text">rpt = Current Report();
+Try( rpt &lt;&lt; Get Scriptable Object );
+ShowProperties (rpt);</jm:action>
+            <jm:tip>Write list of commands that can be sent to the current report to the log.</jm:tip>
+            <jm:icon type="none"></jm:icon>
+          </jm:command>
+          <jm:command>
+            <jm:name>ABOUT</jm:name>
+            <jm:caption>About</jm:caption>
+            <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\addinAbout.jsl</jm:action>
+            <jm:icon type="none"></jm:icon>
+          </jm:command>
+        </jm:menu>
+      </jm:insert_after>
+    </jm:insert_in_menu>
+    <jm:insert_in_menu>
+      <jm:name>Tables</jm:name>
+      <jm:insert_after>
+        <jm:name></jm:name>
+        <jm:separator />
+        <jm:command>
+          <jm:name>COPY TABLE SCRIPT WITHOUT DATA</jm:name>
+          <jm:caption>Copy Table Script without Data</jm:caption>
+          <jm:action type="text">current data table() &lt;&lt; copy table script(NoData)</jm:action>
+          <jm:tip>Copy table script with the nodata keyword.</jm:tip>
+          <jm:icon type="none"></jm:icon>
+        </jm:command>
+      </jm:insert_after>
+    </jm:insert_in_menu>
+  </jm:insert_in_main_menu>
+</jm:menu_and_toolbar_customizations>

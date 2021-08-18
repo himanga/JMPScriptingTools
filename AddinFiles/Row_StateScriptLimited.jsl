@@ -1,0 +1,64 @@
+//save script to clipboard that restores the current row states
+
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Row state script simple" );
+
+dt = current data table();
+i = 0;
+sel = {};
+
+hdn =  dt << Get Hidden Rows();
+exc = dt << Get Excluded Rows();
+sel = dt << Get Selected Rows();
+
+script = "Names default to here( 1 );
+dt = current data table();
+hdn = " || if( N rows( hdn ) == 0, "[]", print matrix( hdn ) )
+|| ";
+exc = " || if( N rows( exc ) == 0, "[]", print matrix( exc ) )
+|| ";
+sel = " || if( N rows( sel ) == 0, "[]", print matrix( sel ) )
+|| ";
+
+//clear all row states
+For Each Row(
+	Row State() = Selected State( 0 );
+);
+
+//hide rows
+if( N items( hdn ) > 0,
+	dt << Select Rows( hdn );
+	dt << Hide(1);
+);
+
+//exclude rows
+if( N items( exc ) > 0,
+	dt << select all rows();
+	dt << invert row selection();
+	dt << Select Rows( exc );
+	dt << Exclude(1);
+);
+
+//select rows
+if( N items( sel ) > 0,
+	dt << select all rows();
+	dt << invert row selection();
+	dt << Select Rows( sel );
+);";
+
+Set clipboard(script);
+
+show("Set clipboard.")

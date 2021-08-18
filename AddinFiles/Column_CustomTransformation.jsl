@@ -1,0 +1,199 @@
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Custom Column Transformation" );
+
+//Reference current table
+dt1 = Current Data Table();
+
+//flag to output a bunch of status info to the log file
+debug = 0;
+
+//window box, all code is inside this box
+nw = New Window( "Custom Column Transformation",
+
+	//box to hold spacers on left and right side of data
+	H List Box ( 
+		
+		//spacer on left side of window
+		Spacer Box( Size( 12, 12) ),
+	
+		//box to hold all other parts of window
+		V List Box(
+			
+			//heading and instructions
+			Text Box( "Choose Transformation Settings " ), 
+			Spacer Box( Size( 12, 12 ) ),
+			V List Box( Text Box( "Directions:" ||
+								  "\!N1. Select columns to transform in the data table." ||
+								  "\!N2. Type a formula below, or select an example." ||
+								  "\!N3. Select a phrase to be appended to each new column name." ||
+								  "\!N4. Press OK." ||
+								  "\!N5. Repeat 2-4 as necessary." ||
+								  "\!N6. Press Close/Cancel to exit."), 
+			Spacer Box( Size( 12, 12 ) ) ),
+			
+			//radio buttons with examples, when selected the text in the formula edit box is modified
+			panelbox("Example Equations",
+				rb1 = radio box({"Lag", "Change", "Shuffle", "Date Dep", "Column Only", "Cos Oscillation", "Sin Oscillation", 
+					"10 day t score", "Savitzkey-Golay 5pt Quad/Cub", "Savitzkey-Golay 7pt Quad/Cub", "Savitzkey-Golay 9pt Quad/Cub"},
+					one_rb = rb1 << get selected;
+					if (one_rb == "Lag",
+						FormulaIn << set text("Lag(<column>,1)");,
+						one_rb == "Change",
+						FormulaIn << set text("<column> - Lag(<column>,1)");,
+						one_rb == "Shuffle",
+						FormulaIn << set text("Col Stored Value(<column>, Col Shuffle())");,
+						one_rb == "Date Dep",
+						FormulaIn << set text("If( As Column( \!"Date\!" ) < Date DMY( 1, 1, 2016 )," ||
+											  "\!N\!t<column> / 10,\!N\!t<column>\!N)");,
+						one_rb == "Cos Oscillation",
+						FormulaIn << set text("cos(<column> * (2 * pi()) / Col Max( <column> ) )");,
+						one_rb == "Sin Oscillation",
+						FormulaIn << set text("sin(<column> * (2 * pi()) / Col Max( <column> ) )");,
+						one_rb == "10 day t score",
+						FormulaIn << set text("Lag( 
+	(<column> - Mean(
+		Lag( <column>, 1 ),
+		Lag( <column>, 2 ),
+		Lag( <column>, 3 ),
+		Lag( <column>, 4 ),
+		Lag( <column>, 5 ),
+		Lag( <column>, 6 ),
+		Lag( <column>, 7 ),
+		Lag( <column>, 8 ),
+		Lag( <column>, 9 ),
+		Lag( <column>, 10 )
+	) ) / Std Dev(
+		Lag( <column>, 1 ),
+		Lag( <column>, 2 ),
+		Lag( <column>, 3 ),
+		Lag( <column>, 4 ),
+		Lag( <column>, 5 ),
+		Lag( <column>, 6 ),
+		Lag( <column>, 7 ),
+		Lag( <column>, 8 ),
+		Lag( <column>, 9 ),
+		Lag( <column>, 10 )
+	)
+)"),
+						one_rb == "Savitzkey-Golay 5pt Quad/Cub",
+						FormulaIn << set text("1/35*(-3*Lag(<column>,2)+12*Lag(<column>,1)+17*<column>+12*Lag(<column>,-1)-3*Lag(<column>,-2))"),
+						one_rb == "Savitzkey-Golay 7pt Quad/Cub",
+						FormulaIn << set text("1/21*(-2*Lag(<column>,3)+3*Lag(<column>,2)+6*Lag(<column>,1)+7*<column>+6*Lag(<column>,-1)+3*Lag(<column>,-2)-2*Lag(<column>,-3))"),
+						one_rb == "Savitzkey-Golay 9pt Quad/Cub",
+						FormulaIn << set text("1/231*(-21*Lag(<column>,3)+14*Lag(<column>,3)+39*Lag(<column>,2)+54*Lag(<column>,1)+59*<column>+54*Lag(<column>,-1)+39*Lag(<column>,-2)+14*Lag(<column>,-3)-21*Lag(<column>,-4))")
+						
+						
+						
+					);
+				),
+			),
+			
+			//Formula edit box with instructions
+			Spacer Box( Size( 6, 6 ) ),
+			V List Box( Text Box( "FORMULA\!NCreate a new column in the data table and then copy/paste the formula from " ||
+								  "the formula editor.  Then use <column> up to 50 times to indicate where column names " ||
+								  "should be substituted. Reference other columns using As Column(\!"Column Name\!")." ),
+			Spacer Box( Size( 12, 12 ) ), 
+			V List Box( 
+				FormulaIn = Text Edit Box(
+					"Lag(<column>,1)",
+					<<Justify Text( Left ),
+					<<Set Width( 400 ),
+					<<setNlines( 5 )
+				)
+			),
+					   
+			//Description edit box with instructions
+			Spacer Box( Size( 6, 6 ) ),
+			V List Box ( Text Box( "DESCRIPTION\!NText appended to each new column name:" ) ),
+			Spacer Box( Size( 12, 12 ) ) ),
+			V List Box ( DescIn = Text Edit Box( " TRANSFORMED",
+							<<Justify Text( Left ),
+							<<Set Width( 400 ),
+							<<setNlines( 1 )
+						 )
+					   ),
+			Spacer Box( Size( 25, 25 ) ),
+			
+			//Box to hold command buttons
+			H List Box(
+			
+				//Button to create new columns
+				Button Box( "OK",
+				
+					//get list of colums selected in the data table
+					ColumnList = dt1 << Get Selected Columns();
+					
+					//TODO: loop through this section for multiple input columns, list of <column1>, <column2>, etc.
+					
+					//variable to hold text string to be replaced with column names
+					ReplaceTarget = "<column>";
+					
+					//Get formula from text box
+					FormulaInput = FormulaIn << Get Text;
+					
+					//get column description from text box
+					DescInput = DescIn << Get Text;
+					
+					//output debug info
+					if (debug == 1,Show( FormulaInput );Show( DescInput );Show( ColumnList ););
+					
+					//get number of selected columns
+					n = N Items( ColumnList );
+					
+					//for each column
+					For( i = 1, i <= n, i++,
+					
+						//get data type of column
+						ColumnDataType = Column( ColumnList[i] ) << Get Data Type;
+						
+						//create new variable for modified formula
+						FormulaComplete = Substitute( FormulaInput, "<column>", ":\!"" || char( ColumnList[i] ) || "\!"n" );
+						
+						//create string containing expression that will create the new column reference
+						newColExpr = Expr(
+							dt1 << New Column( Char( ColumnList[i] ) || Char( DescInput ),
+								Expr( ColumnDataType ),
+								Formula( Eval( Parse( FormulaComplete ) ) )
+							)
+						);
+						
+						//Try creating the new column reference
+						Try( Eval( Eval Expr( newColExpr ) ) );
+						
+						//TODO: Check if new column was created and it has a formula, inform user
+						
+					); //loop each selected column
+				), //end of 'OK' command button
+				
+				//button to close the window
+				Button Box( "Close/Cancel",
+					Show( "Closed" );
+					nw << Close Window;
+				)
+				
+			), //end of box to hold command buttons
+			
+			//spacer on bottom of window
+			Spacer Box( Size( 12, 12 ) )
+		), //end of vertical box with all window content except left and right spacers
+		
+		//spacer in right side of window
+		Spacer Box( Size( 12, 12 ) )
+		
+	) //end of horizontal box for spacers on left and right side
+	
+); //end of window box

@@ -1,0 +1,33 @@
+/* About: This File
+Check for updates and log add-in usage whenver the add-in
+is loaded, including when JMP starts.
+
+Section: Globals
+*/
+
+Names default to here( 1 );
+
+// About: Customize this file
+// Set this to the add-in ID
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+// About: store the home directory for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+// About: store the home directory for this add-in
+ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+
+// About: read a file with information about the add-in (name, developer, etc)
+ns:metadata_aa = Include( ns:addinhome || "customMetadata.jsl" );
+
+// About: load misc functions
+// Stuff that is used across the whole add-in,
+// and functions to log usage information, check for updates, and store user preferences
+Include( ns:addinhome || "addinLog.jsl" );
+
+// About: Log that the add-in was loaded
+ns:logusage( "Load" );
