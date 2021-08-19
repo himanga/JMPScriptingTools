@@ -3,7 +3,7 @@ Routine: Test mapply
 tests <mapply>
 */
 
-ns = Namespace( "com.adm.ModelEngine" || ".addinnamespace" );
+ns = Namespace( "com.github.himanga.JMPScriptingTools" || ".addinnamespace" );
 
 ut test( "Tools", "mapply", Expr(
 

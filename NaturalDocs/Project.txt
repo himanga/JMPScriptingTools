@@ -70,8 +70,6 @@ Source Folder 2: ..\Tests
 
 Ignore Source Folder: ..\AddinFiles\Docs
 
-Ignore Source Folder: ..\AddinFiles\Docs
-
 Ignore Source Folder Pattern: ..\.*
 
 

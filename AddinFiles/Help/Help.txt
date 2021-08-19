@@ -15,5 +15,3 @@ About: Developer
 Created by Isaac Himanga
 
 Submit bug reports via github at the link <above: Version>.
-
-Log in with your domain account and password, or email Research.I.T <I.T.Research@adm.com> for assistance logging in.

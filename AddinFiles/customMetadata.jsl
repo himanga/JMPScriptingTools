@@ -5,7 +5,7 @@ Associative Array(
 		List( "author", "Isaac Himanga" ),
 		List( "buildDate", 3712136081 ),
 		List( "developer", "Isaac Himanga" ),
-		List( "developeremail", "" ),
+		List( "developeremail", "message me on the JMP community or github" ),
 		List( "id", "com.github.himanga.JMPScriptingTools" ),
 		List( "name", "Scripting Tools" ),
 		List( "state", "DEV" )
