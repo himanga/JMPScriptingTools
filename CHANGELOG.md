@@ -2,11 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [HEAD]
-
-### Added
-
-### Changed
+## [v1.16]
 
 ### Fixed
 Bug fixes related to first release.
