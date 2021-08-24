@@ -1,13 +1,13 @@
 Associative Array(
 	List(
 		List( "abouttext", "Tools to make it easier to use JMP. See the documentation (below) for more information." ),
-		List( "addinVersion", 1.16 ),
+		List( "addinVersion", 1.17 ),
 		List( "author", "Isaac Himanga" ),
 		List( "buildDate", 3712639472 ),
 		List( "developer", "Isaac Himanga" ),
 		List( "developeremail", "message me on the JMP community or github" ),
 		List( "id", "com.github.himanga.JMPScriptingTools" ),
 		List( "name", "Scripting Tools" ),
-		List( "state", "PROD" )
+		List( "state", "DEV" )
 	)
 )
