@@ -1,0 +1,20 @@
+/* About: Test Configuration Defaults
+
+Placeholder. This add-in has no environment-dependent tests yet, so
+there is nothing to configure - the file exists so the hook is already
+wired when that changes.
+
+JMPOSIPITools uses its copy of this file for PI server / timezone
+settings that vary per machine. The pattern: put defaults here, and
+override them on a given machine by copying this file to
+testConfig.local.jsl (gitignored). Both are loaded by
+<RunTestsStandalone.jsl>, local second so it wins.
+
+Add a setting here only when a test genuinely can't run without knowing
+something machine-specific. Anything a test can determine for itself
+belongs in the test.
+
+Section: Globals
+*/
+
+// (no settings yet)
