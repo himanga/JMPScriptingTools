@@ -1,0 +1,75 @@
+<#
+About: Build Orchestrator
+
+Runs build steps defined in a preset file or a custom list of steps.
+Each step is a script in build/pipeline/ that accepts -ProjectRoot.
+
+Presets are defined in build/presets/ as .psd1 files. The Custom preset
+requires steps to be passed explicitly via -Steps.
+
+Section: Globals
+#>
+[CmdletBinding()]
+param(
+    [string]$Preset = 'Quick',
+    [string[]]$Steps = @()
+)
+
+$ErrorActionPreference = 'Stop'
+
+# Paths first: the config/utils dot-sources below need $projectRoot, and
+# sourcing them before it exists is why the JMPOSIPITools copy of this
+# script can't be run standalone (jmp-tools/JMPOSIPITools#1).
+$scriptDir   = Resolve-Path $PSScriptRoot
+$projectRoot = Split-Path $scriptDir -Parent
+$pipeline    = Join-Path $scriptDir 'pipeline'
+
+. "$projectRoot/build/buildConfig.ps1"
+. "$projectRoot/build/buildUtils.ps1"
+
+$allowedPresets = @('Quick', 'Release', 'Custom')
+if ($Preset -notin $allowedPresets) {
+    throw "Invalid preset '$Preset'. Allowed: $($allowedPresets -join ', ')"
+}
+
+# Determine steps to run
+if ($Preset -eq 'Custom') {
+    if ($Steps.Count -eq 0) {
+        throw "Preset 'Custom' requires -Steps to be specified."
+    }
+    $stepsToRun = $Steps
+} else {
+    $presetFile = Join-Path $scriptDir "presets/$Preset.psd1"
+    if (-not (Test-Path $presetFile)) {
+        throw "Preset file not found: $presetFile"
+    }
+    $presetConfig = Import-PowerShellDataFile $presetFile
+    $stepsToRun   = $presetConfig.Steps
+}
+
+function Invoke-Step {
+    param([string]$Name)
+
+    $stepPath = Join-Path $pipeline "$Name.ps1"
+    if (-not (Test-Path $stepPath)) {
+        throw "Step script not found: $stepPath"
+    }
+    Write-Host "`n=== $Name ==="
+    & $stepPath -ProjectRoot $projectRoot -UpdateTime $UpdateTime
+}
+
+try {
+    $UpdateTime = Get-TimestampForJMP
+
+    foreach ($step in $stepsToRun) {
+        Invoke-Step $step
+    }
+
+    Write-Host "`nBUILD SUCCEEDED ($Preset)"
+    Write-Host "`nBuild Date: $UpdateTime `n"
+}
+catch {
+    Write-Error "BUILD FAILED: $($_.Exception.Message)"
+    Write-Host "`nBuild date was $UpdateTime but it isn't ready.`n"
+    exit 1
+}

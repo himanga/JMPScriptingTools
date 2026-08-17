@@ -1,0 +1,37 @@
+/*
+Routine: Test add-in load
+Checks that the add-in loaded and its metadata parsed. Deliberately
+side-effect free - asserts on state the load already produced rather
+than calling anything that writes files, so the suite is safe to run
+repeatedly on a real machine.
+*/
+
+ns = Namespace( "com.github.himanga.JMPScriptingTools" || ".addinnamespace" );
+
+ut test( "Load", "metadata", Expr(
+
+	ut assert that(
+		Expr( ns:metadata_aa["id"] ),
+		ut equal to( "com.github.himanga.JMPScriptingTools" )
+	);
+	ut assert that(
+		Expr( Length( ns:metadata_aa["name"] ) > 0 ),
+		ut equal to( 1 )
+	);
+	ut assert that(
+		Expr( ns:metadata_aa["addinVersion"] > 0 ),
+		ut equal to( 1 )
+	);
+));
+
+/*
+Routine: Test add-in home
+tests that <ns:addinhome> resolves to a real folder on this machine
+*/
+ut test( "Load", "addinhome", Expr(
+
+	ut assert that(
+		Expr( Directory Exists( Convert File Path( ns:addinhome ) ) ),
+		ut equal to( 1 )
+	);
+));

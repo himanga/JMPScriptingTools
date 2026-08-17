@@ -9,3 +9,9 @@ TestAddinHome/**
 /Tests/Results/**
 *.jmpaddin
 *.zip
+AddinFilesTempForBuild/**
+build/.last_addin
+build/buildConfig.local.ps1
+Tests/testConfig.local.jsl
+temp-*
+!NaturalDocs/custom.css
