@@ -2,9 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [HEAD]
+## [2.00]
 
 ### Added
+- Prep for JMP Marketplace release.
 - Preferences window (Add-Ins > Scripting Tools > Preferences).
 - Leveled logging: Off, Error, Warn, Info, Debug.
 - First-run notice asking whether to enable logging.
