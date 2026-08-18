@@ -1,6 +1,11 @@
 /* About: Default AddIn Logging Script
 
-Saves two functions to the add-in namespace to write messages to a log file
+Saves functions to the add-in namespace to write leveled messages to a
+local log file. This log is never transmitted anywhere - it stays on
+this machine, at the path in <ns:LogFilePath>. The user controls the
+level (or turns logging off entirely) through the "LogLevel" user
+preference - set on first load by <ns:ShowLoggingFirstRunWindow>, and
+changeable any time from Add-Ins > Scripting Tools > Preferences.
 
 Inspired by John Moore from JMP Discovery 2016
 
@@ -14,41 +19,130 @@ Names default to here( 1 );
 thisAddIn = "com.github.himanga.JMPScriptingTools";
 
 // About: get or make namespace for this add-in
-If( 
+If(
 	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
 	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" ),
 	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
 );
 
-// Function: logusage
-// 
-/* 
+// About: Log levels, Off to Debug, ordered by severity rank (1-5).
+ns:LogLevelNames = {"Off", "Error", "Warn", "Info", "Debug"};
+
+// Function: LogLevelRank
+// Returns the severity rank (1-5) for a level name, or Missing if unknown.
+ns:LogLevelRank = Function( {levelname}, {idx},
+	idx = Contains( ns:LogLevelNames, levelname );
+	If( idx == 0, ., idx );
+);
+
+// About: Set path for the log file (local-only)
+ns:AppDataPath = Convert file path( "$USER_APPDATA" );
+ns:AppDataRoot = Regex( ns:AppDataPath, "(.*?/)(SAS/)?JMP[^/]*/[^/]+/", "\1" );
+If( Is Missing( ns:AppDataRoot ), ns:AppDataRoot = ns:AppDataPath );
+ns:AppDataPath = ns:AppDataRoot || "JMP AddIn " || thisAddIn || "/";
+ns:LogFilePath = ns:AppDataPath || "log.jsl";
+
+// About: Fallback log level, used only when the preferences framework isn't
+// loaded (e.g. a headless test that Includes this file on its own). The real
+// value lives in the "LogLevel" user preference - see <ns:CurrentLogLevel>.
+// Empty string means "the user has not chosen a level yet", which suppresses
+// all logging until they do.
+ns:LogLevel = "";
+
+// About: Why the last <logusage> call failed, or "" if it did not.
+// Set on every call. A non-empty value after logusage returned 0 means it
+// threw; an empty one means the message was suppressed by level, which is
+// not an error.
+ns:LastLogError = "";
+
+/*
+	Function: CurrentLogLevel
+		---Prototype---
+		CurrentLogLevel()
+		---------------
+		The level logging is currently gated at. Reads the "LogLevel" user
+		preference (addinUserPref.jsl) when the preferences framework is
+		loaded, so a change made in the preferences window takes effect
+		immediately without reloading the add-in; falls back to <ns:LogLevel>
+		otherwise.
+
+	Returns:
+		One of <ns:LogLevelNames>, or "" if no level has been chosen yet.
+
+	Example:
+		> ns:CurrentLogLevel();	// "Info"
+*/
+ns:CurrentLogLevel = Function( {}, {lvl},
+	lvl = ns:LogLevel;
+	Try(
+		// Key membership on an associative array is the << Contains message,
+		// NOT the Contains() function - that form throws, and being inside
+		// this Try() meant it failed silently and every level read as unset.
+		If( !Is Empty( ns:UserPref ),
+			If( ns:UserPref << Contains( "LogLevel" ),
+				lvl = ns:UserPref["LogLevel"];
+			);
+		);
+	);
+	If( !Is String( lvl ), lvl = "" );
+	lvl;
+);
+
+/*
 	Function: logusage
 		---Prototype---
-		logusage( String, 0|1|milling )
+		logusage( String logmessage, String level )
 		---------------
-		Write a message to a local temporary file
+		Write a leveled message to the local log file at <ns:LogFilePath>.
+		No-ops entirely if the user has set the log level to "Off". This
+		log is never transmitted anywhere - see the file header above.
 
-	Arguments:
+	Parameters:
 		logmessage - Message to log.
-		allowupload - Set to zero to prevent upload of comment right now
-		
-					  Use this to keep execution fast within loops.
+		level - One of <ns:LogLevelNames> ("Error", "Warn", "Info", or
+			"Debug"). Defaults to "Info". Only written if this level's
+			severity is within what the user's configured ns:LogLevel
+			allows - see <ns:LogLevelRank>.
+
+	Returns:
+		1 if the message was written, 0 if it was suppressed (by level)
+		or if writing failed.
 
 	Example:
 		> logusage( "Script completed without error." );
-		
-	Note:
-		
+		> logusage( "Failed to parse input.", "Error" );
+
+	See Also:
+		<logerror>, <logwarn>, <loginfo>, <logdebug>
 */
-ns:logusage = Function( {logmessage, allowupload = 1},
+ns:logusage = Function( {logmessage, level = "Info"},
+	{r, myrank, userrank, logtime, logentry, headerentry},
 	r = 0;
-	try(
-		
+	ns:LastLogError = "";
+	Try(
+		myrank = ns:LogLevelRank( level );
+		If( Is Missing( myrank ),
+			Throw( "logusage: unknown log level '" || level || "'" );
+		);
+
+		// No level chosen yet (first run, before the user has answered the
+		// logging notice) - write nothing at all. Consent first.
+		userrank = ns:LogLevelRank( ns:CurrentLogLevel() );
+		If( Is Missing( userrank ),
+			Return( 0 );
+		);
+
+		// LogLevel "Off" has rank 1, which suppresses every level
+		// including Error (rank 2) - this is the total-off switch.
+		If( myrank > userrank,
+			Return( 0 );
+		);
+
 		logtime = Today();
-		
+
 		//get info about the session, store it in a tab delineated string
 		logentry = MDYHMS( logtime ) || "\!t" ||
+			level || "\!t" ||
 			Get Environment Variable( "USERNAME" ) || "\!t" ||
 			Get Environment Variable( "USERDOMAIN" ) || "\!t" ||
 			Get Environment Variable( "COMPUTERNAME" ) || "\!t" ||
@@ -61,29 +155,47 @@ ns:logusage = Function( {logmessage, allowupload = 1},
 			char( ns:metadata_aa["addinVersion"] ) || "\!t" ||
 			char( jmpversion() ) || "\!t" ||
 			logmessage;
-		
-		//Set log file location
-		// About: Set path for user preferences
-		logfilepath = Convert file path( "$USER_APPDATA" );
-		logfilepath = Regex( logfilepath, "(.*?/)(SAS/)?JMP[^/]*/[^/]+/", "\1") || 
-			"JMP AddIn " || thisAddIn || "/";
-		logfile = logfilepath || "log.jsl";
-		
-		If( !Directory Exists( logfilepath ),
-			Create Directory( logfilepath );
+
+		If( !Directory Exists( ns:AppDataPath ),
+			Create Directory( ns:AppDataPath );
 		);
-	
+
 		//create a new log file with a header if the file does not exist
-		If( ! File Exists( logfile ),
-			headerentry = "time\!tusername\!tuserdomain\!tcomputername\!tlogonserver\!t" ||
+		If( ! File Exists( ns:LogFilePath ),
+			headerentry = "time\!tlevel\!tusername\!tuserdomain\!tcomputername\!tlogonserver\!t" ||
 				"numberofprocessors\!tos\!tuserdnsdomain\!taddinid\!taddinname\!tversion\!tjmpversion\!tmessage";
-			Save Text File( logfile, headerentry, Mode( "replace" ) );
+			Save Text File( ns:LogFilePath, headerentry, Mode( "replace" ) );
 		);
-		
+
 		//save the log entry
-		Save Text File( logfile, "\!N" || logentry, Mode( "append" ) );
-		
+		Save Text File( ns:LogFilePath, "\!N" || logentry, Mode( "append" ) );
+
 		r = 1;
+	,
+		// Record why rather than just returning 0. Logging must never take
+		// down the code it reports on, so this stays caught - but a silent
+		// catch makes "returned 0" indistinguishable between "suppressed by
+		// level" and "threw while writing", which cost two Release cycles.
+		ns:LastLogError = exception_msg;
 	);
 	return(r);
 );
+
+// Function: logerror
+// Convenience wrapper: ns:logusage( logmessage, "Error" ).
+// Call this from a caught exception's handler so failures are always
+// captured regardless of what level the user has logging set to (short
+// of "Off") - see <logusage> for the full level-gating behavior.
+ns:logerror = Function( {logmessage}, ns:logusage( logmessage, "Error" ) );
+
+// Function: logwarn
+// Convenience wrapper: ns:logusage( logmessage, "Warn" ).
+ns:logwarn = Function( {logmessage}, ns:logusage( logmessage, "Warn" ) );
+
+// Function: loginfo
+// Convenience wrapper: ns:logusage( logmessage, "Info" ).
+ns:loginfo = Function( {logmessage}, ns:logusage( logmessage, "Info" ) );
+
+// Function: logdebug
+// Convenience wrapper: ns:logusage( logmessage, "Debug" ).
+ns:logdebug = Function( {logmessage}, ns:logusage( logmessage, "Debug" ) );

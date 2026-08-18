@@ -1,19 +1,24 @@
-//copy the table script with the nodata keyword
+/* About: This File
+Menu entry point for Add-Ins > Scripting Tools > Preferences.
+
+Section: Globals
+*/
 
 Names default to here( 1 );
 
 thisAddIn = "com.github.himanga.JMPScriptingTools";
 
-//get or make and populate namespace for this add-in
-If( 
+//get or make namespace for this add-in
+If(
 	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
-	//reload the add-in
+	//reload the add-in - the preferences framework and its schema are set
+	//up by addinLoad.jsl, so there's nothing to show without it
 	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
 	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
 	Include( ns:addinhome || "addinLoad.jsl" );,
 	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
 );
 
-ns:logusage( "Copy Table Script without Data" );
+ns:logusage( "Preferences" );
 
-Current data table() << Copy Table Script( NoData );
+ns:UserPrefUI();

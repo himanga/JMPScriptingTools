@@ -1,0 +1,135 @@
+/*
+Routine: Test leveled logging
+tests <logusage> gating, the Off switch, and the not-yet-chosen state.
+
+Redirects <ns:LogFilePath> to a temp file for the duration so the suite
+never writes to - or reads - the real diagnostic log, and restores both
+the path and the user's LogLevel preference in the final test. The
+preference is changed in memory only (savetofile = 0), so the user's
+saved UserPref.jsl is never rewritten either.
+*/
+
+ns = Namespace( "com.github.himanga.JMPScriptingTools" || ".addinnamespace" );
+
+// Saved state lives in the namespace, not in file-scope variables - ut test
+// evaluates its Expr() block later and elsewhere, and a name that does not
+// resolve there fails silently rather than loudly.
+//
+// The temp log goes in ns:AppDataPath rather than $TEMP: it is the add-in's own
+// folder, it is known to end in a separator, and logusage() creates it if it is
+// missing - so the write cannot fail for reasons that have nothing to do with
+// what is under test. It is a distinct filename, so the real log.jsl is never
+// touched.
+ns:logtestOrigLevel   = ns:UserPref["LogLevel"];
+ns:logtestOrigLogPath = ns:LogFilePath;
+ns:logtestTempLogPath = ns:AppDataPath || "unittest-log.jsl";
+
+ut test( "Logging", "level ranks", Expr(
+
+	ut assert that( Expr( ns:LogLevelRank( "Off" ) ),   ut equal to( 1 ) );
+	ut assert that( Expr( ns:LogLevelRank( "Error" ) ), ut equal to( 2 ) );
+	ut assert that( Expr( ns:LogLevelRank( "Debug" ) ), ut equal to( 5 ) );
+	ut assert that(
+		Expr( Is Missing( ns:LogLevelRank( "Verbose" ) ) ),
+		ut equal to( 1 )
+	);
+));
+
+/*
+Routine: Test unset level
+An unset LogLevel means the user has not answered the first-run notice,
+which must suppress everything - see <ns:CurrentLogLevel>.
+*/
+ut test( "Logging", "unset level writes nothing", Expr(
+
+	ns:LogFilePath = ns:logtestTempLogPath;
+	If( File Exists( ns:LogFilePath ), Delete File( ns:LogFilePath ) );
+	ns:UpdatePreference( "LogLevel", "", 0 );
+
+	// Probes: if the level does not read back, or the folder is not real,
+	// every later write assertion fails for that reason and not the one it
+	// claims to test. Assert them separately so the report says which.
+	ut assert that( Expr( ns:CurrentLogLevel() ), ut equal to( "" ) );
+	ut assert that( Expr( Directory Exists( ns:AppDataPath ) ), ut equal to( 1 ) );
+
+	ut assert that( Expr( ns:logerror( "unit test - must not be written" ) ), ut equal to( 0 ) );
+	ut assert that( Expr( File Exists( ns:LogFilePath ) ), ut equal to( 0 ) );
+));
+
+/*
+Routine: Test the off switch
+"Off" outranks every level including Error - a total kill switch, not
+just a quiet setting.
+*/
+ut test( "Logging", "Off suppresses even Error", Expr(
+
+	ns:UpdatePreference( "LogLevel", "Off", 0 );
+
+	ut assert that( Expr( ns:logerror( "unit test - must not be written" ) ), ut equal to( 0 ) );
+	ut assert that( Expr( File Exists( ns:LogFilePath ) ), ut equal to( 0 ) );
+));
+
+/*
+Routine: Test level gating
+tests that only messages at or above the configured level are written
+*/
+ut test( "Logging", "level gating", Expr(
+
+	ns:UpdatePreference( "LogLevel", "Error", 0 );
+
+	// Level must read back before any write assertion means anything.
+	ut assert that( Expr( ns:CurrentLogLevel() ), ut equal to( "Error" ) );
+
+	ut assert that( Expr( ns:logerror( "unit-test-error" ) ), ut equal to( 1 ) );
+
+	// If the write threw, this reports the exception text - the previous
+	// assertion can only say "returned 0", which does not distinguish a
+	// suppressed message from a failed one.
+	ut assert that( Expr( ns:LastLogError ), ut equal to( "" ) );
+
+	ut assert that( Expr( File Exists( ns:LogFilePath ) ), ut equal to( 1 ) );
+	ut assert that( Expr( ns:logwarn(  "unit-test-warn"  ) ), ut equal to( 0 ) );
+	ut assert that( Expr( ns:logdebug( "unit-test-debug" ) ), ut equal to( 0 ) );
+
+	ut assert that(
+		Expr( Contains( Load Text File( ns:LogFilePath ), "unit-test-error" ) > 0 ),
+		ut equal to( 1 )
+	);
+	ut assert that(
+		Expr( Contains( Load Text File( ns:LogFilePath ), "unit-test-warn" ) ),
+		ut equal to( 0 )
+	);
+	ut assert that(
+		Expr( Contains( Load Text File( ns:LogFilePath ), "\!tError\!t" ) > 0 ),
+		ut equal to( 1 )
+	);
+));
+
+/*
+Routine: Test unknown level
+An unrecognised level name returns failure rather than throwing past the
+caller - logging must never take down the code it is reporting on.
+*/
+ut test( "Logging", "unknown level returns 0", Expr(
+
+	ns:UpdatePreference( "LogLevel", "Debug", 0 );
+
+	ut assert that( Expr( ns:logusage( "unit-test-badlevel", "Critical" ) ), ut equal to( 0 ) );
+));
+
+/*
+Routine: Restore logging state
+Runs as a test rather than as trailing file-level code so it is ordered
+with the tests above, and so a failure to restore is reported instead of
+silently leaving the add-in pointed at a temp log.
+*/
+ut test( "Logging", "restore state", Expr(
+
+	If( File Exists( ns:logtestTempLogPath ), Try( Delete File( ns:logtestTempLogPath ) ) );
+	ns:LogFilePath = ns:logtestOrigLogPath;
+	ns:UpdatePreference( "LogLevel", ns:logtestOrigLevel, 0 );
+
+	ut assert that( Expr( ns:LogFilePath == ns:logtestOrigLogPath ), ut equal to( 1 ) );
+	ut assert that( Expr( ns:UserPref["LogLevel"] == ns:logtestOrigLevel ), ut equal to( 1 ) );
+	ut assert that( Expr( File Exists( ns:logtestTempLogPath ) ), ut equal to( 0 ) );
+));

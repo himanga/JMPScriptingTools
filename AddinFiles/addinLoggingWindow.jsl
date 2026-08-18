@@ -1,0 +1,98 @@
+/* About: This File
+
+The first-run logging notice: what the local log contains, where it lives,
+and an explicit on/off choice. Shown automatically on add-in load for as
+long as the "LogLevel" user preference is unset - answering it (either
+way) is what stops it appearing again, so there's no separate "already
+shown" flag to keep in sync.
+
+Cancelling does NOT count as consent: the preference stays unset,
+nothing is logged, and the notice comes back next load.
+
+Finer-grained levels (Warn, Debug) are set afterwards from
+Add-Ins > Scripting Tools > Preferences (addinUserPrefMenu.jsl).
+
+Section: Globals
+*/
+
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+If(
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+/*
+	Function: ShowLoggingFirstRunWindow
+		---Prototype---
+		ShowLoggingFirstRunWindow()
+		---------------
+		Show the local-logging disclosure with an on/off choice. Clicking
+		OK saves the answer to the "LogLevel" preference, which is what
+		marks the notice as answered. Cancel or the window X saves
+		nothing, so the notice returns on the next load.
+
+	Returns:
+		The level the user chose, or "" if they cancelled.
+
+	Example:
+		> ns:ShowLoggingFirstRunWindow();
+*/
+ns:ShowLoggingFirstRunWindow = Function( {}, {chosen, introText, result, rb},
+
+	chosen = "";
+
+	introText = ns:metadata_aa["name"] || " can keep a local diagnostic log on " ||
+		"this machine to help troubleshoot problems - it is never uploaded or " ||
+		"sent anywhere. The log includes your Windows username and computer " ||
+		"name (for telling sessions apart when troubleshooting), plus which " ||
+		"commands you ran and any errors.\!N\!N" ||
+		"Nothing is logged until you choose below. You can change this any " ||
+		"time from Add-Ins > Scripting Tools > Preferences, where you can also " ||
+		"pick a more detailed level (Warn or Debug) for troubleshooting.";
+
+	// A modal New Window returns a result associative array (["button"] is 1
+	// for OK, -1 for Cancel) - NOT a window reference, and not until it has
+	// closed. So there is nothing to send Close Window to from inside a
+	// button script; JMP closes a modal itself when OK or Cancel is clicked.
+	// The choice is captured in OK's script, which runs before the close.
+	result = New Window( "Scripting Tools Logging",
+		<< Modal,
+		V List Box(
+			Text Box( "Logging", << Set Font Size( 20 ), << Set Width( 480 ) ),
+			Spacer Box( Size( 0, 10 ) ),
+			Text Box( introText, << Set Width( 480 ), << Set Wrap( 480 ) ),
+			Spacer Box( Size( 0, 20 ) ),
+
+			rb = Radio Box( {"Keep a local log (recommended)", "Do not log anything"} ),
+			Spacer Box( Size( 0, 20 ) ),
+
+			Text Box( "Log file location:", << Set Font Style( "bold" ), << Set Width( 480 ) ),
+			Text Edit Box( ns:LogFilePath,
+				<< Set Read Only( 1 ), << Set Width( 480 ), << Set NLines( 2 ), << Set Wrap( 480 )
+			),
+			Spacer Box( Size( 0, 20 ) ),
+
+			H List Box(
+				Button Box( "OK",
+					chosen = If( (rb << Get) == 1, "Info", "Off" );
+				),
+				Button Box( "Cancel" ),
+				<< Padding( Left( 0 ), Top( 0 ), Right( 20 ), Bottom( 0 ) )
+			),
+			<< Padding( Left( 20 ), Top( 20 ), Right( 20 ), Bottom( 20 ) )
+		)
+	);
+
+	// Cancel or the window X leaves the preference unset, so nothing is
+	// logged and the notice appears again next load - closing without
+	// choosing is deliberately not consent.
+	If( result["button"] == 1 & chosen != "",
+		ns:UpdatePreference( "LogLevel", chosen );
+	);
+
+	chosen;
+);

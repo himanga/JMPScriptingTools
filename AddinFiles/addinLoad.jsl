@@ -27,7 +27,39 @@ ns:metadata_aa = Include( ns:addinhome || "customMetadata.jsl" );
 // About: load misc functions
 // Stuff that is used across the whole add-in,
 // and functions to log usage information, check for updates, and store user preferences
+Include( ns:addinhome || "addinTools.jsl" );
 Include( ns:addinhome || "addinLog.jsl" );
 
+// About: default preference values
+// A blank LogLevel means the user has not chosen one yet - nothing is
+// logged until they do, and the first-run notice below is what asks them.
+ns:DefaultPref = Associative Array({
+	{"LogLevel", ""}
+});
+
+// About: preference types, descriptions, and value restrictions
+ns:PrefInfo = Associative Array({
+	{"LogLevel", {
+		"How much detail to write to the local diagnostic log. One of Off, Error, Warn, Info, or Debug. Off disables logging entirely. Blank means you have not chosen yet, and nothing is logged",
+		"char",
+		{"", "Off", "Error", "Warn", "Info", "Debug"}
+	}}
+});
+
+// About: load user preferences (this is where LogLevel comes from)
+Include( ns:addinhome || "addinUserPref.jsl" );
+ns:LoadUserPref();
+
 // About: Log that the add-in was loaded
+// Suppressed on a genuine first run - no level has been chosen yet, so
+// nothing is written until the user answers the notice below.
 ns:logusage( "Load" );
+
+// About: Show the logging notice until the user has chosen a level.
+// See addinLoggingWindow.jsl. There's no separate "already shown" flag -
+// an unset LogLevel preference IS the "never answered" signal, and saving
+// any level (including Off) is what stops the notice appearing again.
+If( Is Missing( ns:LogLevelRank( ns:CurrentLogLevel() ) ),
+	Include( ns:addinhome || "addinLoggingWindow.jsl" );
+	ns:ShowLoggingFirstRunWindow();
+);

@@ -1,0 +1,86 @@
+/* About: Shared helper functions
+
+Small utilities used across the add-in. Ported from the matching file in
+JMPOSIPITools so the shared user-preferences framework (addinUserPref.jsl)
+behaves identically in every add-in - keep the two in sync when either
+changes.
+
+Section: Globals
+*/
+
+Names default to here( 1 );
+
+// About: Customize this file
+// Set this to the add-in ID
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+// About: get or make namespace for this add-in
+If(
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" ),
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+/*
+	Function: TryAppendError
+		---Prototype---
+		TryAppendError( Expr ex, List lst, String prepend, Boolean stillthrow )
+		---------------
+		Evaluate an expression, and on failure append a readable message to
+		a list of errors instead of aborting - so a caller can collect every
+		problem in a batch (e.g. loading a preferences file key by key) and
+		report them together.
+
+	Parameters:
+		ex - Expression to evaluate.
+		lst - Expr() of the list to append any error message to.
+		prepend - Text put in front of the exception message.
+		stillthrow - If 1, rethrow after recording the message.
+
+	Returns:
+		0 if the expression failed and stillthrow was 0.
+
+	Example:
+		> ns:TryAppendError( Expr( 1 = 2 ), Expr( loaderrors ), "Error loading preferences file" );
+*/
+ns:TryAppendError = function({ex, lst, prepend, stillthrow = 0}, {err, errm},
+	lst = Name Expr(lst);
+	if(!(Type(lst) == "List"), Throw("list to append error to must be a list, (was " || Type(lst) || ")"));
+	if(!(Type(prepend) == "String"), Throw("prepend text must be a string, (was " || Type(prepend) || ")"));
+	if(!(Contains({"Integer", "Number"}, Type(stillthrow) )), Throw("stillthrow must be an integer of 0 or 1, (was " || Type(stillthrow) || ")"));
+	if(!(Contains({0,1}, stillthrow)), Throw("stillthrow must be 0 or 1"));
+	Try(
+		Eval(Name Expr(ex));
+	,
+		err = exception_msg;
+		if(is list(err),
+			errm = prepend || ": " || char(err[1]),
+			errm = prepend || ": " || char(err);
+		);
+		Print(errm);
+		Eval(Eval Expr(Insert Into(Expr(name expr(lst)), errm)));
+		if(stillthrow == 1, Throw(errm), Return(0));
+	)
+);
+
+/*
+	Function: AutoResizeTEB
+		---Prototype---
+		AutoResizeTEB( TextEditBox teb )
+		---------------
+		Resize a text edit box's height to fit the number of lines it
+		currently holds, so multi-line preference values aren't clipped.
+
+	Parameters:
+		teb - The Text Edit Box display box to resize.
+
+	Example:
+		> ns:AutoResizeTEB( myTextEditBox );
+*/
+ns:AutoResizeTEB = function({teb},
+	t = teb << get text;
+	breakcount = length(t) - length(substitute(t,"\!N",""));
+	fs = teb << get font size;
+	tHeight = (breakcount + 1) * ( fs ) * 0.89 + fs * 1.06;
+	teb << set height(tHeight + 2);
+);
