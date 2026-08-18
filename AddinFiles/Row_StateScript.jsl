@@ -16,7 +16,7 @@ If(
 
 ns:logusage( "Row State Script" );
 
-dt = current data table();
+dt = ns:RequireDataTable( "Copy row state script" );
 
 script = "Names default to here( 1 );
 dt = current data table();

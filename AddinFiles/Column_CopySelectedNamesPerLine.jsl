@@ -16,7 +16,8 @@ If(
 
 ns:logusage( "Copy Selected Columns Names to Clipboard as One-Per-Line" );
 
-nms = ( Current data table() << Get Selected Columns );
+dt = ns:RequireDataTable( "Copy Selected Columns Names to Clipboard as One-Per-Line" );
+nms = ns:RequireSelectedColumns( dt, "Copy Selected Columns Names to Clipboard as One-Per-Line" );
 If( N Items( nms ) > 0,
 	r = "";
 	For( i = 1, i <= N Items( nms ), i++,

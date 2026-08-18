@@ -16,7 +16,7 @@ If(
 
 ns:logusage( "Row state script simple" );
 
-dt = current data table();
+dt = ns:RequireDataTable( "Copy row state script - limited" );
 i = 0;
 sel = {};
 
