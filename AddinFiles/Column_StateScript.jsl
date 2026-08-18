@@ -16,7 +16,7 @@ If(
 
 ns:logusage( "Column State Script" );
 
-dt = current data table();
+dt = ns:RequireDataTable( "Copy Column States Script" );
 i = 0;
 hdn = {};
 exc = {};

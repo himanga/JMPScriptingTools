@@ -21,7 +21,7 @@ If(
 ns:logusage( "Custom Column Transformation" );
 
 //Reference current table
-dt1 = Current Data Table();
+dt1 = ns:RequireDataTable( "Custom Transformation" );
 
 //flag to output a bunch of status info to the log file
 debug = 0;
@@ -143,8 +143,6 @@ nw = New Window( "Custom Column Transformation",
 					//get list of colums selected in the data table
 					ColumnList = dt1 << Get Selected Columns();
 					
-					//TODO: loop through this section for multiple input columns, list of <column1>, <column2>, etc.
-					
 					//variable to hold text string to be replaced with column names
 					ReplaceTarget = "<column>";
 					
@@ -159,6 +157,9 @@ nw = New Window( "Custom Column Transformation",
 					
 					//get number of selected columns
 					n = N Items( ColumnList );
+					
+					//columns that could not be created, reported together at the end
+					failed = {};
 					
 					//for each column
 					For( i = 1, i <= n, i++,
@@ -177,12 +178,33 @@ nw = New Window( "Custom Column Transformation",
 							)
 						);
 						
-						//Try creating the new column reference
-						Try( Eval( Eval Expr( newColExpr ) ) );
-						
-						//TODO: Check if new column was created and it has a formula, inform user
+						//Try creating the new column reference. Keep going on failure so
+						//one bad column does not abandon the rest, but record it - a bare
+						//Try() here meant a bad formula produced no column and no message.
+						Try(
+							Eval( Eval Expr( newColExpr ) ),
+							Insert Into( failed, Char( ColumnList[i] ) || ": " || Char( exception_msg ) );
+							ns:logerror( "Custom Transformation: " || Char( ColumnList[i] ) || " - " || Char( exception_msg ) );
+						);
 						
 					); //loop each selected column
+					
+					//tell the user what did not work
+					If( N Items( failed ) > 0,
+						New Window( "Custom Transformation",
+							<< Modal,
+							V List Box(
+								Text Box( Char( N Items( failed ) ) || " of " || Char( n ) ||
+									" column(s) could not be created:", << Set Font Style( "bold" ) ),
+								Spacer Box( Size( 0, 10 ) ),
+								Text Box( Concat Items( failed, "\!N" ), << Set Width( 500 ) ),
+								Spacer Box( Size( 0, 10 ) ),
+								Text Box( "Check the formula - <column> is replaced with each selected column." ),
+								Spacer Box( Size( 0, 10 ) ),
+								Button Box( "OK" )
+							)
+						);
+					);
 				), //end of 'OK' command button
 				
 				//button to close the window

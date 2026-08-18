@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Add-in load no longer fails on unmatched AppData path.
+- Commands now explain themselves instead of failing silently.
 
 ## [v1.16]
 

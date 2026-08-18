@@ -16,4 +16,5 @@ If(
 
 ns:logusage( "Copy Selected Columns to Clipboard as List" );
 
-Set clipboard( Current data table() << Get Selected Columns );
+dt = ns:RequireDataTable( "Copy Selected Columns to Clipboard as List" );
+Set clipboard( ns:RequireSelectedColumns( dt, "Copy Selected Columns to Clipboard as List" ) );

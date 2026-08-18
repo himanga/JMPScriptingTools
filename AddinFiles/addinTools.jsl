@@ -84,3 +84,95 @@ ns:AutoResizeTEB = function({teb},
 	tHeight = (breakcount + 1) * ( fs ) * 0.89 + fs * 1.06;
 	teb << set height(tHeight + 2);
 );
+
+/*
+	Function: Refuse
+		---Prototype---
+		Refuse( String action, String message )
+		---------------
+		Tell the user why a command will not run, then stop it. Shows the
+		message in a window - a bare Throw() only reaches the JMP log,
+		which nobody has open when they pick a menu item - logs it at Warn,
+		and then halts the calling script.
+
+	Parameters:
+		action - Menu caption of the calling command, used in the window
+			title and the log entry.
+		message - What the user needs to do, in plain language.
+
+	Returns:
+		Never returns - always throws.
+
+	Example:
+		> ns:Refuse( "Rename Columns", "Open a data table first." );
+*/
+ns:Refuse = Function( {action, message}, {},
+	ns:logwarn( action || ": " || message );
+	New Window( action,
+		<< Modal,
+		V List Box(
+			Text Box( message, << Set Width( 380 ), << Set Wrap( 380 ) ),
+			Spacer Box( Size( 0, 16 ) ),
+			Button Box( "OK" ),
+			<< Padding( Left( 20 ), Top( 20 ), Right( 20 ), Bottom( 20 ) )
+		)
+	);
+	// Stops the calling script. No argument, so the user gets the window
+	// above and not a second, more cryptic message behind it.
+	Throw();
+);
+
+/*
+	Function: RequireDataTable
+		---Prototype---
+		RequireDataTable( String action )
+		---------------
+		Return the current data table, or stop with a message the user can
+		act on. Every command here needs an open table; without this each
+		one fails somewhere further in with a raw JMP error naming an
+		internal variable.
+
+	Parameters:
+		action - Menu caption of the calling command, used in the message
+			and the log entry.
+
+	Returns:
+		The current data table. Throws if there is not one.
+
+	Example:
+		> dt = ns:RequireDataTable( "Rename Columns" );
+*/
+ns:RequireDataTable = Function( {action}, {dt},
+	dt = Empty();
+	Try( dt = Current Data Table() );
+	If( Is Empty( dt ),
+		ns:Refuse( action, "Open a data table first, then run " || action || "." );
+	);
+	dt;
+);
+
+/*
+	Function: RequireSelectedColumns
+		---Prototype---
+		RequireSelectedColumns( DataTable dt, String action )
+		---------------
+		Return the table's selected columns, or stop with a message the
+		user can act on.
+
+	Parameters:
+		dt - Data table to read the selection from.
+		action - Menu caption of the calling command.
+
+	Returns:
+		List of selected columns. Throws if the selection is empty.
+
+	Example:
+		> cols = ns:RequireSelectedColumns( dt, "Copy Column Script" );
+*/
+ns:RequireSelectedColumns = Function( {dt, action}, {cols},
+	cols = dt << Get Selected Columns();
+	If( N Items( cols ) < 1,
+		ns:Refuse( action, "Select one or more columns first, then run " || action || "." );
+	);
+	cols;
+);

@@ -20,10 +20,11 @@ If(
 
 ns:logusage( "Column Get Script" );
 
-ColumnList = Current Data Table() << Get Selected Columns();
+dt = ns:RequireDataTable( "Copy Column Script" );
+ColumnList = ns:RequireSelectedColumns( dt, "Copy Column Script" );
 ScriptOut = "";
 for( i = 1, i <= n items(ColumnList), i++,
-	ThisScript = Char(Column( Current Data Table(), ColumnList[i] ) << Get Script) || ";";
+	ThisScript = Char(Column( dt, ColumnList[i] ) << Get Script) || ";";
 	ThisScript = substitute( ThisScript, ", Set Selected", "" );
 	ScriptOut = ScriptOut || If( i > 1, "\!N", "" ) || ThisScript;
 );

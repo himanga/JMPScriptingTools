@@ -16,4 +16,5 @@ If(
 
 ns:logusage( "Copy Table Script without Data" );
 
-Current data table() << Copy Table Script( NoData );
+dt = ns:RequireDataTable( "Copy Table Script without Data" );
+dt << Copy Table Script( NoData );

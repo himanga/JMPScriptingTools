@@ -16,9 +16,7 @@ If(
 
 ns:logusage( "Rename Columns" );
 
-dt = current data table();
-
-if( is empty( dt ), throw("Open a data table and select columns to transform first."));
+dt = ns:RequireDataTable( "Rename Columns" );
 
 cn = list();
 cnoriginal = list();

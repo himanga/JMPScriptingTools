@@ -16,6 +16,18 @@ If(
 
 ns:logusage( "Get Window Scriptable Object" );
 
-rpt = Current Report();
-Try( rpt << Get Scriptable Object );
+rpt = Empty();
+Try( rpt = Current Report() );
+If( Is Empty( rpt ),
+	ns:Refuse( "Get Window Scriptable Object", "Open a report window first, then run Get Window Scriptable Object." );
+);
+
+// Not every report answers Get Scriptable Object - keep going and still
+// show what the window does support, but say so rather than silently
+// skipping it.
+Try(
+	rpt << Get Scriptable Object,
+	ns:logerror( "Get Window Scriptable Object: Get Scriptable Object failed - " || Char( exception_msg ) );
+	Write( "\!NThis report does not support Get Scriptable Object; showing its properties only.\!N" );
+);
 ShowProperties( rpt );

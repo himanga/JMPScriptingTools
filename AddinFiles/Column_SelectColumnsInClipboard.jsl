@@ -14,7 +14,7 @@ If(
 
 ns:logusage( "Select Columns in Clipboard" );
 
-dt = current data table();
+dt = ns:RequireDataTable( "Select Columns in Clipboard" );
 
 //Get list of columns in clipboard
 clip_input = Get Clipboard();
