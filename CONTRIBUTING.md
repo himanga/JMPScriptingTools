@@ -51,3 +51,46 @@ be installed in JMP.
 
 `Test` fails the build if any test fails, or if no configured JMP version is
 installed — a silent "nothing ran" is treated as a failure, not a pass.
+
+## Versioning
+
+Two-decimal scheme starting at **2.00** — `2.00`, `2.01`, ... `2.10`, not
+JMPOSIPITools' four-decimal `0.1305` style. `state` is `DEV` between releases
+and `RELEASE` for a shipped version; this repo has no separate `TEST` state.
+
+**The README never names a version or state** — it says "the `.jmpaddin`
+file", not a specific filename — so nothing there needs touching during a
+release. If a future edit to the README adds one back in (a version badge, a
+filename example), add updating it as a step below; until then this list is
+everywhere a version number lives.
+
+To release a new version:
+
+1. Merge all feature branches that are ready into `main`.
+2. Run `.\build\build.ps1 -Preset Release`; all unit tests must pass with no
+   other errors.
+3. Test add-in functionality manually — UI elements are not covered by unit
+   tests.
+4. Confirm NaturalDocs comments are current for anything changed.
+5. Update these two files (don't commit yet):
+   - `AddinFiles/customMetadata.jsl`: `addinVersion` to the new version,
+     `state` to `RELEASE`.
+   - `AddinFiles/addin.def`: `addinVersion` to match, `minJmpVersion` if the
+     minimum changed.
+   - `CHANGELOG.md`: replace `[HEAD]` with `[v<version>]`.
+6. Run `.\build\build.ps1 -Preset Release` again and note the build date it
+   reports.
+7. Save the output `.jmpaddin` — this is what gets uploaded to GitHub and the
+   JMP Community, not a later rebuild.
+8. Update `AddinFiles/customMetadata.jsl`'s `buildDate` to match the build
+   that produced the saved file.
+9. Commit on `main`: `Version <version>`.
+10. Create a git tag `v<version>` with message `Version <version>`, and a
+    GitHub release from it — CHANGELOG section as the release notes, the
+    `.jmpaddin` as a release asset.
+11. Follow-up `bump` commit on `main`:
+    - `customMetadata.jsl`: `addinVersion` up by `0.01`, `buildDate` up by 1,
+      `state` back to `DEV`.
+    - `addin.def`: `addinVersion` to match.
+    - `CHANGELOG.md`: new `[HEAD]` section, duplicating the previous
+      release's subheadings.
