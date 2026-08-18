@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Scripting Tools">
+  <title>JMP Scripting Tools</title>
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="#122A42"/>
+
+  <!-- code lines, top left -->
+  <g stroke="#E8EEF5" stroke-width="15" stroke-linecap="round">
+    <line x1="34" y1="62"  x2="122" y2="62"/>
+    <line x1="34" y1="96"  x2="150" y2="96"/>
+    <line x1="34" y1="130" x2="100" y2="130"/>
+  </g>
+
+  <!-- gear, top right, sitting over the lines.
+       The disc below it is background-colored: a gear-shaped halo let the
+       code line show through the tooth valleys as white arcs. -->
+  <circle cx="172" cy="92" r="64" fill="#122A42"/>
+  <path d="M 225.16 82.51 L 225.16 101.49 L 209.89 101.25 L 205.33 112.25 L 216.30 122.88 L 202.88 136.30 L 192.25 125.33 L 181.25 129.89 L 181.49 145.16 L 162.51 145.16 L 162.75 129.89 L 151.75 125.33 L 141.12 136.30 L 127.70 122.88 L 138.67 112.25 L 134.11 101.25 L 118.84 101.49 L 118.84 82.51 L 134.11 82.75 L 138.67 71.75 L 127.70 61.12 L 141.12 47.70 L 151.75 58.67 L 162.75 54.11 L 162.51 38.84 L 181.49 38.84 L 181.25 54.11 L 192.25 58.67 L 202.88 47.70 L 216.30 61.12 L 205.33 71.75 L 209.89 82.75 Z" fill="#4FB0E8"/>
+  <circle cx="172" cy="92" r="38" fill="#4FB0E8"/>
+  <circle cx="172" cy="92" r="17" fill="#122A42"/>
+
+  <text x="128" y="196" fill="#E8EEF5" font-family="DejaVu Sans, Helvetica, Arial, sans-serif"
+        font-weight="bold" font-size="86" text-anchor="middle" dominant-baseline="central">ST</text>
+</svg>
