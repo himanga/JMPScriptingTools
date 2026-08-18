@@ -1,0 +1,3 @@
+rpt = Current Report();
+Try( rpt << Get Scriptable Object );
+ShowProperties( rpt );

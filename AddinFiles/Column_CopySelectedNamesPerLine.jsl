@@ -1,0 +1,10 @@
+Names default to here( 1 );
+nms = ( Current data table() << Get Selected Columns );
+If( N Items( nms ) > 0,
+	r = "";
+	For( i = 1, i <= N Items( nms ), i++,
+		r = r || If( i > 1, "\!N", "" ) || Char( nms[i] << Get Name )
+	);
+	Set clipboard( r ),
+	Set clipboard( "" )
+);
