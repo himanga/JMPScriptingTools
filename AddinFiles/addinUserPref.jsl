@@ -1,0 +1,370 @@
+/* About: User preferences
+
+Generic, schema-driven user preferences for this add-in: values live in
+<ns:UserPref>, defaults in ns:DefaultPref, and per-preference descriptions,
+types and allowed values in ns:PrefInfo (both defined in addinLoad.jsl).
+Preferences are saved as JSL to <ns:UserPrefPath> under the user's AppData
+folder - local only, never transmitted.
+
+Ported from the matching file in JMPOSIPITools / JMPValidation so all three
+add-ins share one preferences mechanism rather than each inventing its own.
+Keep them in sync when this changes. The one deliberate difference here is
+the Is Missing() guard on the AppData regex below - Regex() returns *missing*
+(not the original string) when its pattern doesn't match, which silently
+cascades into every ns: path being undefined. The sibling add-ins still carry
+that unguarded.
+
+Section: Globals
+*/
+
+Names default to here( 1 );
+
+// About: Customize this file
+// Set this to the add-in ID
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+// About: get or make namespace for this add-in
+If(
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+// About: Set path for user preferences
+// addinLog.jsl computes the same folder; reuse it when it's already been
+// worked out rather than running the regex (and its failure mode) twice.
+haveappdata = 0;
+Try( If( Is String( ns:AppDataPath ), haveappdata = 1 ) );
+If( !haveappdata,
+	appdata = Convert file path( "$USER_APPDATA" );
+	appdataroot = Regex( appdata, "(.*?/)(SAS/)?JMP[^/]*/[^/]+/", "\1" );
+	// Regex() returns missing on no match - fall back to the unmodified path
+	// instead of letting a missing value cascade into every path below.
+	If( Is Missing( appdataroot ), appdataroot = appdata );
+	ns:AppDataPath = appdataroot || "JMP AddIn " || thisAddIn || "/";
+);
+ns:UserPrefPath = ns:AppDataPath || "UserPref.jsl";
+
+// About: Anything <ns:LoadUserPref> couldn't read, as a list of messages.
+// Emptied at the start of every load. The load itself swallows failures so a
+// bad preferences file can't take down add-in load, which also means a silent
+// fallback to defaults is indistinguishable from a clean load unless you look
+// here.
+ns:LastPrefLoadErrors = {};
+
+// About: Suppress the "Failed to Load Preferences" recovery window.
+// Set to 1 by headless callers (tests) - the recovery window asks the user to
+// choose a repair, and there's nobody to answer it in an automated run. Errors
+// still land in <ns:LastPrefLoadErrors>.
+ns:PrefLoadSilent = 0;
+
+/*
+	Function: UpdatePreference
+		---Prototype---
+		UpdatePreference( String pref, value, Boolean savetofile )
+		---------------
+		Set a single preference value, saving the whole preferences file
+		by default.
+
+	Parameters:
+		pref - Preference key, one of the keys in ns:PrefInfo.
+		value - New value.
+		savetofile - If 1 (the default), write the file immediately.
+
+	Example:
+		> ns:UpdatePreference( "LogLevel", "Info" );
+*/
+ns:UpdatePreference = function( {pref, value, savetofile = 1},
+	ns:UserPref[pref] = value;
+	If( savetofile == 1, ns:SaveUserPref );
+);
+
+/*
+	Function: SaveUserPref
+		---Prototype---
+		SaveUserPref()
+		---------------
+		Write <ns:UserPref> to <ns:UserPrefPath>, creating the folder if
+		it doesn't exist yet.
+*/
+ns:SaveUserPref = function( {}, {PrefStr},
+	PrefStr = Char( Name Expr( ns:UserPref ) );
+	If( !Directory Exists( ns:AppDataPath ),
+		Create Directory( ns:AppDataPath );
+	);
+	If( Directory Exists( ns:AppDataPath ),
+		Save Text File( ns:UserPrefPath, PrefStr );
+	);
+);
+
+/*
+	Function: LoadUserPref
+		---Prototype---
+		LoadUserPref()
+		---------------
+		Populate <ns:UserPref> from ns:DefaultPref, then overwrite with
+		anything readable from <ns:UserPrefPath>. Each saved value is checked
+		against ns:PrefInfo's type and allowed-value list; if the file can't
+		be read or contains invalid values, the user is offered a repair,
+		reset, or leave-it-alone choice rather than silently losing settings.
+*/
+ns:LoadUserPref = function ({},
+	{newPref, loaderrors, savedPref, pref, totalpref, knownprefs, prefn, loadfailWin, rb_tblformat, prefchoice},
+
+	//Load defaults
+	newPref = ns:DefaultPref;
+	ns:LastPrefLoadErrors = {};
+
+	If( File exists( ns:UserPrefPath ),
+		loaderrors = {};
+
+		Try(
+			//insert each preference into the user interface
+			//Overwrite default preferences with any saved in the file
+			ns:TryAppendError(Expr( savedPref = Parse( Load text file( ns:UserPrefPath ) ) ),
+				expr(loaderrors), "Error loading and parsing preferences file", 1 );
+			ns:TryAppendError(Expr( pref = savedPref << First; ),
+				expr(loaderrors), "Error getting first preference while loading preferences file", 1 );
+			ns:TryAppendError(Expr( totalpref = N Items( savedPref ) ),
+				expr(loaderrors), "Error getting number of preferences while loading preferences file", 1 );
+			knownprefs = ns:PrefInfo << get keys;
+			pref = (savedPref << get keys)[1];
+			for( prefn = 1, prefn <= totalpref, prefn++,
+				Try(
+					ns:TryAppendError(
+						Expr(if(contains(knownprefs, pref),
+							if(ns:PrefInfo[pref][2] == "char",
+								if(!(Type(savedPref[pref]) == "String"), throw("Error reading preference from file, " || char(pref) || " should be a string, it was a " || Type(newPref[pref])));
+								if(n items(ns:PrefInfo[pref][3]) > 0,
+									if(!(contains(ns:PrefInfo[pref][3], savedPref[pref])), throw(
+										"Error reading preference from file, value not in the list of allowable values. " ||
+										try("'" || savedPref[pref] || "' should be one of: " || char(ns:PrefInfo[pref][3]) || "." )
+									));
+								),
+								Print("Warning: unhandled preference type (" || pref || ") while reading from file - it was retained.")
+							),
+							Print("Warning: unknown preference (" || pref || ") read from file - it was retained.")
+						)),
+						expr(loaderrors), "Error loading preference (" ||
+							try(char(pref), "unknown preference") || ").", 1 );
+					ns:TryAppendError(Expr( newPref[pref] = savedPref[pref] ),
+						expr(loaderrors), "Error storing preference while loading preferences file", 1 )
+				);
+				ns:TryAppendError(Expr( pref = savedPref << Next( pref ); ),
+					expr(loaderrors), "Error getting next preference while loading preferences file", 1 );,
+			);
+		,
+			print(exception_msg)
+		);
+
+		//record what went wrong before deciding whether to surface it - a
+		//caller (or a test) can always read ns:LastPrefLoadErrors afterwards
+		ns:LastPrefLoadErrors = loaderrors;
+
+		if( length(loaderrors) > 0 & ns:PrefLoadSilent != 1,
+			//failed to parse or load the file - ask the user if they want to replace it
+			// Modal on purpose: add-in load must not continue past unresolved
+			// preferences. Non-modal, the rest of addinLoad.jsl ran underneath
+			// this window - the logging first-run notice opened on top of it and
+			// had to be answered first, then this window overwrote the level the
+			// user had just chosen.
+			//
+			// A modal New Window returns a result, not a window reference, and
+			// closes itself on OK/Cancel - so there is no Close Window call here
+			// (see jsl-gotchas.md).
+			loadfailWin = New window( "Failed to Load Preferences",
+				<< Modal,
+				V List box(
+					Text Box(
+						ns:metadata_aa["name"] || " failed to load user preferences from the saved file.",
+						<< Set Font Style("bold" ),
+						<< Set Width( 600 )
+					),
+					Spacer Box( Size( 24, 24 ) ),
+					Text Box(
+						"Preferences are saved in the file, '" || ns:UserPrefPath || "', but it couldn't be processed, what do you want to do?",
+						<< Set Width( 600 )
+					),
+					Spacer Box( Size( 24, 24 ) ),
+
+					H List Box(
+						panelbox("Action to take:",
+							rb_tblformat = radio box({
+								"Fix broken settings, keeping any that could be read (if any).  This will probably fix the issue but you will lose some or all settings.",
+								"Start over with a new blank config file with all defaults - this should fix it but you lose all settings.",
+								"Nothing for now, the add-in might not load this time and I will fix it myself."
+							})
+						)
+					),
+					Spacer Box( Size( 24, 24 ) ),
+					Text Box( "Error details:" ),
+					Text Box(
+						Concat Items(loaderrors, "\!N")
+					),
+					Spacer Box( Size( 24, 24 ) ),
+
+					H List Box(
+						Button Box( "OK", prefchoice = rb_tblformat << Get ),
+						Button Box( "Cancel" )
+					)
+					,
+					<< Padding( Top(20), Left(20), right(20), bottom(20) )
+				)
+			);
+
+			// Cancel leaves the broken file untouched and the defaults in memory,
+			// so this window comes back next load rather than silently accepting
+			// a state the user did not pick.
+			If( loadfailWin["button"] == 1,
+				If( Contains( {1, 2}, prefchoice ),
+					//make a backup of the file
+					Copy file(
+						ns:UserPrefPath,
+						Regex(
+							ns:UserPrefPath,
+							"^(.*)\.jsl$",
+							"\1 backup after failed parse " || Format( Today(), "Format Pattern", "<YYYY>-<MM>-<DD> <hh24><mm><ss>" ) || ".jsl"
+						)
+					);
+					//save the user preferences file - defaults plus anything that transferred
+					If( prefchoice == 2, newPref = ns:DefaultPref );
+					ns:UserPref = newPref;
+					ns:SaveUserPref();
+				,
+					throw(ns:metadata_aa["name"] || " failed to load: " || Concat Items(loaderrors, ",\!N"));
+				);
+			);
+
+		);
+
+	);
+
+	ns:UserPref = newPref;
+);
+
+/*
+	Function: UserPrefUI
+		---Prototype---
+		UserPrefUI()
+		---------------
+		Open the preferences window: one labelled text edit box per
+		preference in ns:PrefInfo, validated against that preference's
+		allowed-value list as it's typed. Saves on close.
+
+	Example:
+		> ns:UserPrefUI();
+*/
+ns:UserPrefUI = function({},
+	//User interface to set preferences
+	prefwin = new window( "AddIn Preferences",
+		v list box(
+			Text box( "Preferences for " || ns:metadata_aa["name"],
+				<< set width( 500 );,
+				<< Set font size( 20 );,
+				<< Padding(
+					Left( 0 ),
+					Top( 0 ),
+					Right( 0 ),
+					Bottom( 20 ))
+			),
+			V List Box(
+
+			),
+
+			h list box(
+				Button Box("Close",
+					prefwin << Close window();
+				),
+				<< Padding(
+					Left( 0 ),
+					Top( 20 ),
+					Right( 20 ),
+					Bottom( 0 )
+				)
+			),
+			<< Padding(
+				Left( 20 ),
+				Top( 0 ),
+				Right( 20 ),
+				Bottom( 10 )
+			)
+		);
+	);
+
+	//Save preferences to file
+	prefwin << On close( ns:SaveUserPref() );
+
+	//Function to read values and update user pref
+
+	//insert each preference into the user interface
+	pref = ns:PrefInfo << First;
+	totalpref = N Items( ns:PrefInfo );
+	for( prefn = 1, prefn <= totalpref, prefn++,
+		//text box describing the preference
+		(prefwin << Find( ListBox(3) ) ) << Append( Text Box(
+			ns:PrefInfo[pref][1] || ":",
+			<< Padding(
+				Left( 0 ),
+				Top( 10 ),
+				Right( 0 ),
+				Bottom( 0 )
+			),
+			<< set width( 500 );
+		) );
+		//text edit box with the preference value
+		Eval( Eval Expr(
+			(prefwin << Find( ListBox(3) ) ) << Append(
+				Expr( Parse( "TEB_" || Char( pref ) ) ) = Text Edit Box(
+				ns:UserPref[ Expr( pref ) ],
+				<< Set Width( 500 ),
+					<< Set NLines( 2 ),
+					<< Set Wrap( 1000 ),
+				<< Set Script(
+
+					//Get the user-entered value
+					newVal = Expr( Parse( "TEB_" || Char( pref ) ) ) << Get text;
+
+					//Check that the user entered an allowed value
+					If( N Items( ns:PrefInfo[Expr( pref )][3] ) > 0,
+
+						isallowed = sum( Transform Each(
+							{x},
+							ns:PrefInfo[ Expr( pref )][3],
+							if( x == newVal,
+								1,
+								0
+							);
+						) );
+					,
+						isallowed = 1
+					);
+
+					//If an allowed value then set it, otherwise reset to the last good value
+					If( isallowed > 0,
+						//set the value
+						ns:UserPref[ Expr( Name Expr( pref ) ) ] = newVal;,
+						//reset the value
+						Expr( Parse( "TEB_" || Char( pref ) ) ) << Set text( ns:UserPref[ Expr( pref ) ] );
+					);
+
+						ns:AutoResizeTEB( Expr( Parse( "TEB_" || Char( pref ) ) ) );
+				),
+				<< Padding(
+					Left( 0 ),
+					Top( 5 ),
+					Right( 0 ),
+					Bottom( 0 )
+				)
+				);
+			);
+		) );
+		pref = ns:PrefInfo << Next( pref );
+	);
+
+	// Auto resize all boxes
+	for each( {w}, prefwin << XPath( "//TextEditBox" ), try( ns:AutoResizeTEB(w) ) );
+
+);

@@ -5,11 +5,18 @@ All notable changes to this project will be documented in this file.
 ## [HEAD]
 
 ### Added
+- Preferences window (Add-Ins > Scripting Tools > Preferences).
+- Leveled logging: Off, Error, Warn, Info, Debug.
+- First-run notice asking whether to enable logging.
+- Every menu action is logged at Info level.
 
 ### Changed
 - All commands moved under Add-Ins > Scripting Tools.
+- Log level is now a user preference.
+- Removed stale log-upload comment.
 
 ### Fixed
+- Add-in load no longer fails on unmatched AppData path.
 
 ## [v1.16]
 

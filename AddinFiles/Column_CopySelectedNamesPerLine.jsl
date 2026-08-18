@@ -1,4 +1,21 @@
+//copy the selected column names to the clipboard, one per line
+
 Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Copy Selected Columns Names to Clipboard as One-Per-Line" );
+
 nms = ( Current data table() << Get Selected Columns );
 If( N Items( nms ) > 0,
 	r = "";

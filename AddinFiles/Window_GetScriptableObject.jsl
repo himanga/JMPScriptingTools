@@ -1,3 +1,21 @@
+//write the list of commands that can be sent to the current report to the log
+
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Get Window Scriptable Object" );
+
 rpt = Current Report();
 Try( rpt << Get Scriptable Object );
 ShowProperties( rpt );

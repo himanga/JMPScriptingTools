@@ -96,6 +96,13 @@
 
 
           <jm:command>
+            <jm:name>PREFERENCES</jm:name>
+            <jm:caption>Preferences</jm:caption>
+            <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\addinUserPrefMenu.jsl</jm:action>
+            <jm:tip>Change add-in preferences, including the local logging level (or turn logging off).</jm:tip>
+            <jm:icon type="none"></jm:icon>
+          </jm:command>
+          <jm:command>
             <jm:name>ABOUT</jm:name>
             <jm:caption>About</jm:caption>
             <jm:action type="path">$ADDIN_HOME(com.github.himanga.JMPScriptingTools)\addinAbout.jsl</jm:action>

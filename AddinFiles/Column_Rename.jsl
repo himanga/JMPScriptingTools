@@ -1,4 +1,21 @@
-﻿
+//rename columns by matching a regular expression
+
+Names default to here( 1 );
+
+thisAddIn = "com.github.himanga.JMPScriptingTools";
+
+//get or make and populate namespace for this add-in
+If( 
+	!Namespace Exists( Eval( thisAddIn ) || ".addinnamespace" ),
+	//reload the add-in
+	ns = New Namespace( Eval( thisAddIn ) || ".addinnamespace" );
+	ns:addinhome = "$ADDIN_HOME(" || thisAddIn || ")\";
+	Include( ns:addinhome || "addinLoad.jsl" );,
+	ns = Namespace( Eval( thisAddIn ) || ".addinnamespace" )
+);
+
+ns:logusage( "Rename Columns" );
+
 dt = current data table();
 
 if( is empty( dt ), throw("Open a data table and select columns to transform first."));
