@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - 
 
 ### Changed
-- 
+- Update documentation to reflect the first Marketplace Listing.
 
 ### Fixed
 - 
