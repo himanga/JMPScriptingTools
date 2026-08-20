@@ -2,16 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [HEAD]
-
-### Added
-- 
+## [2.01]
 
 ### Changed
 - Update documentation to reflect the first Marketplace Listing.
-
-### Fixed
-- 
 
 ## [2.00]
 
