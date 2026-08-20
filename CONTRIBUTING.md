@@ -72,7 +72,7 @@ To release a new version:
 3. Test add-in functionality manually — UI elements are not covered by unit
    tests.
 4. Confirm NaturalDocs comments are current for anything changed.
-5. Update these two files (don't commit yet):
+5. Update these three files (don't commit yet):
    - `AddinFiles/customMetadata.jsl`: `addinVersion` to the new version,
      `state` to `RELEASE`.
    - `AddinFiles/addin.def`: `addinVersion` to match, `minJmpVersion` if the
